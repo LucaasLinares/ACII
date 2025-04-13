@@ -1,2 +1,11 @@
-; Definición de Argumentos esperados en memoria:
-; d10 = 
+; Definición de Argumentos esperados en memoria
+; d10 = dirección base del vector original
+; d11 = dirección base del vector ordenado
+; d12 = cantidad de elementos del vector
+; d13 = sentido de ordenamiento (0 = ascendente ; 1 = descendente)
+
+; Carga de Argumentos:
+cargar $r1, $d10
+cargar $r2, $d11
+cargar $r3, $d12
+cargar $r4, $d13
