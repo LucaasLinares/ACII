@@ -5,7 +5,25 @@
 ; d13 = sentido de ordenamiento (0 = ascendente ; 1 = descendente)
 
 ; Carga de Argumentos:
-cargar $r1, $d10
-cargar $r2, $d11
-cargar $r3, $d12
-cargar $r4, $d13
+cargar $r1, $d10          ; Asigna al registro $r1 la dirección del vector original
+cargar $r2, $d11          ; Asigna al registro $r2 la dirección del vector ordenado          
+cargar $r3, $d12          ; Asigna al registro $r3 la cantidad de elementos
+cargar $r4, $d13          ; Asigna al registro $r4 el sentido de ordenamiento
+
+
+  mov $r5, #0             ; Inicializa el registro $r5 con el valor 0
+COPIAR:
+  cmp $r5, $r3            ; Compara los valores de los registros para 
+  beq ORDENAR             ; Si la cantidad de elemenos ordenados es igual a la cantidad de elementos del vector se dirije a "ORDENAR"  
+  add $r9, $r1, $r5       ; Modifica la variable auxiliar $r9 con la dirección del elemento original a comparar (desplazamiento)
+  add $r10, $r2, $r5      ; Modifica la variable auxiliar $r10 la dirección destino en vector ordenado (desplazamiento)
+  cargar $r7, $r9         ; Carga en $r7 el valor del elemento del vector original
+  guardar $r7, $r10       ; Guarda en el vector ordenado
+  add $r5, $r5, 1         ; Incrementa el valor de $r5
+  jmp COPIAR              ; Salta a "COPIAR"
+
+ORDENAR:
+  
+
+
+   
