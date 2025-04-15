@@ -4,7 +4,7 @@
 ; d12 = cantidad de elementos del vector
 ; d13 = sentido de ordenamiento (0 = ascendente ; 1 = descendente)
 
-; Carga de Argumentos:
+; Carga de Argumentos
   cargar $r1, $d10        ; Asigna al registro $r1 la dirección del vector original
   cargar $r2, $d11        ; Asigna al registro $r2 la dirección del vector ordenado          
   cargar $r3, $d12        ; Asigna al registro $r3 la cantidad de elementos
