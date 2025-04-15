@@ -4,6 +4,8 @@
 ; d12 = cantidad de elementos del vector
 ; d13 = sentido de ordenamiento (0 = ascendente ; 1 = descendente)
 
+
+
 ; Carga de Argumentos
   cargar $r1, $d10        ; Asigna al registro $r1 la dirección del vector original
   cargar $r2, $d11        ; Asigna al registro $r2 la dirección del vector ordenado          
@@ -22,7 +24,15 @@ COPIAR:
   jmp COPIAR              ; Salta a "COPIAR"
 
 ORDENAR:
+  cmp $r5, #0             ; Inicializa el registro $r5 con el valor 0
+
+FOR_I:
+  cmp $r5, $r3            ; Compara los valores del contador ($r5) con la cantidad de elementos del vector ($r3)
+  beq FIN                 ; Si la cantidad de elemenos ordenados es igual a la cantidad de elementos del vector se dirije a "FIN"
+  sub $r6, $r3, $r5       ; Calcula en $r6: j = n - i
+  sub $r6, $r6, $#1       ; Ajusta $r6: j - j - 1 para iterar entre los elementos
+
+FOR_J:
   
-
-
+ 
    
