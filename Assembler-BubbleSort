@@ -33,6 +33,38 @@ FOR_I:
   sub $r6, $r6, $#1       ; Ajusta $r6: j - j - 1 para iterar entre los elementos
 
 FOR_J:
-  
+  cmp $r6, #0             ; Compara el valor de $r6 es menor que 0
+  blt NEXT_I              ; Si j < 0, pasa al siguiente ciclo de i
+  add $r9, $r2, $r6       ; Calcula en $r9 la direccion del elemento A[j]
+  add $r10, $r6, #1       ;
+  add $r10, $r2, $r10     ; Calcula en $r10 la direccion del elemento A[j+1]
+  cargar $r7, $r9         ; Carga a A[j en $r7
+  cargar $r8, $r10        ; Carga a A[j+1 en $r8
+
+; Compara a las variables segun el sentido del ordenamiento
+  cmp $r4, #0             ; Compara si el ordenamiento es ascendente
+  beq ASC                 ; Si es 0, salta a comparación ascendente
+  jmp DESC                ; Si es 1, salta a comparación descendente
+
+ASC:
+  cmp $r7, $r8            ; Compara A[j con A[j+1]
+  blt CAMBIAR             ; Si A[j] es < A[j+1] , se dirije a "CAMBIAR"
+  jmp CONTINUAR           ; Si no, se dirije a "CONTINUAR"
+
+CAMBIAR:
+  guardar $r8, $r9        ; Asigna A[j] con A[j+1]
+  guardar $r7, $r10       ; Asigna A[j+1] con A[j]
+
+CONTINUAR:
+  sub $r6, $r6. #1        ; Decrementa J
+  jmp FOR_J               ; Repite el ciclo
+
+NEXT_I:
+  add $r5, $r5, #1        ; Incrementa I
+  jmp FOR_I               ; Repite el ciclo
+
+FIN:
+  jmp FIN                 ;
+
  
    
