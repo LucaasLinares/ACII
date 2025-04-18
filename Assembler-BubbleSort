@@ -7,10 +7,10 @@
 
 
 ; Carga de Argumentos
-  cargar $r1, $d10        ; Asigna al registro $r1 la dirección del vector original
-  cargar $r2, $d11        ; Asigna al registro $r2 la dirección del vector ordenado          
-  cargar $r3, $d12        ; Asigna al registro $r3 la cantidad de elementos
-  cargar $r4, $d13        ; Asigna al registro $r4 el sentido de ordenamiento
+  ld $r1, $d10        ; Asigna al registro $r1 la dirección del vector original
+  ld $r2, $d11        ; Asigna al registro $r2 la dirección del vector ordenado          
+  ld $r3, $d12        ; Asigna al registro $r3 la cantidad de elementos
+  ld $r4, $d13        ; Asigna al registro $r4 el sentido de ordenamiento
 
   mov $r5, #0             ; Inicializa el registro $r5 con el valor 0
 COPIAR:
@@ -18,8 +18,8 @@ COPIAR:
   beq ORDENAR             ; Si la cantidad de elemenos ordenados es igual a la cantidad de elementos del vector se dirije a "ORDENAR"  
   add $r9, $r1, $r5       ; Modifica la variable auxiliar $r9 con la dirección del elemento original a comparar (desplazamiento)
   add $r10, $r2, $r5      ; Modifica la variable auxiliar $r10 la dirección destino en vector ordenado (desplazamiento)
-  cargar $r7, $r9         ; Carga en $r7 el valor del elemento del vector original
-  guardar $r7, $r10       ; Guarda en el vector ordenado
+  ld $r7, $r9             ; Carga en $r7 el valor del elemento del vector original
+  st $r7, $r10            ; Guarda en el vector ordenado
   add $r5, $r5, 1         ; Incrementa el valor de $r5
   jmp COPIAR              ; Salta a "COPIAR"
 
@@ -38,8 +38,8 @@ FOR_J:
   add $r9, $r2, $r6       ; Calcula en $r9 la direccion del elemento A[j]
   add $r10, $r6, #1       ;
   add $r10, $r2, $r10     ; Calcula en $r10 la direccion del elemento A[j+1]
-  cargar $r7, $r9         ; Carga a A[j en $r7
-  cargar $r8, $r10        ; Carga a A[j+1 en $r8
+  ld $r7, $r9             ; Carga a A[j en $r7
+  ld $r8, $r10            ; Carga a A[j+1 en $r8
 
 ; Compara a las variables segun el sentido del ordenamiento
   cmp $r4, #0             ; Compara si el ordenamiento es ascendente
@@ -52,8 +52,8 @@ ASC:
   jmp CONTINUAR           ; Si no, se dirije a "CONTINUAR"
 
 CAMBIAR:
-  guardar $r8, $r9        ; Asigna A[j] con A[j+1]
-  guardar $r7, $r10       ; Asigna A[j+1] con A[j]
+  st $r8, $r9        ; Asigna A[j] con A[j+1]
+  st $r7, $r10       ; Asigna A[j+1] con A[j]
 
 CONTINUAR:
   sub $r6, $r6. #1        ; Decrementa J
