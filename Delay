@@ -1,0 +1,7 @@
+  .global delay        // Exporta la función delay para poder ser llamada desde otros modulos
+  .text                
+
+delay:
+  PUSH  {R1, R2, LR}   // Guarda los registros que va a usar y el enlace de retorno
+  MOV    R1, R0        // Copia el parametro recibido en R1
+  LDR
