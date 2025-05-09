@@ -11,4 +11,9 @@ loop:
   CMP    R2, #0            // Compara con 0 
   BNE    loop              // Si no es cero, sigue esperando
 
-  SUB    R1, R1, #1        // 
+  SUB    R1, R1, #1        // Decrementa la cantidad de repeticiones del ciclo externo
+  CMP    R1, #0            // Compara con 0
+  BNE    loop              // Si no es cero, sigue repitiendo
+
+  POP  {R1, R2, LR}        // Restaura los registros antes de salir
+  BX    LR                 // Retorno de la funcion
