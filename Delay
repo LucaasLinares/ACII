@@ -1,7 +1,14 @@
-  .global delay        // Exporta la función delay para poder ser llamada desde otros modulos
+  .global delay            // Exporta la función delay para poder ser llamada desde otros modulos
   .text                
 
 delay:
-  PUSH  {R1, R2, LR}   // Guarda los registros que va a usar y el enlace de retorno
-  MOV    R1, R0        // Copia el parametro recibido en R1
-  LDR
+  PUSH  {R1, R2, LR}       // Guarda los registros que va a usar y el enlace de retorno
+  MOV    R1, R0            // Copia el parametro recibido en R1
+  LDR    R2, =10000        // Constante proporcional 
+
+loop:
+  SUB    R2, R2, #1        // Decrementa el contador interno
+  CMP    R2, #0            // Compara con 0 
+  BNE    loop              // Si no es cero, sigue esperando
+
+  SUB    R1, R1, #1        // 
