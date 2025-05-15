@@ -1,1 +1,17 @@
+printf:
+  PUSH  {r0-r12, lr}         ; Guarda registros que va a usar
+  
+  MOV  r1, r0                ; r1 = Puntero a la cadena
+  MOV  r2, #0                ; Contador de argumentos enteros usados
 
+loop:
+  LDRB r3, [r1], #1         ; Carga un byte y avanza puntero
+  CMP  r3, #0               ; Verifica si estamos en el fin de la cadena
+  BEQ  fin
+
+  CMP  r3, #'%'             ; Es un %d?
+  BNE  enviar_entero
+
+  LDRB r4, [r1], #1         ; Carga el siguiente caracter
+  CMP  r4, #'d'             ; Verifica si es una 'd'
+  BNE  enviar_entero
