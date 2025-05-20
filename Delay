@@ -1,19 +1,37 @@
-  .global delay            // Exporta la función delay para poder ser llamada desde otros modulos
-  .text                
-
+// Función de retardo por software.
+// Entrada:
+// R0 – Valor proporcional a la duración del retardo.
+// Salida:
+//  Ninguna (la función solo espera una cantidad de tiempo).
+// Descripción:
+//   Implementa un bucle doble (externo/interno) que genera una
+//   pausa basada en el valor recibido en R0. Guarda los registros
+//   utilizados (R1, R2, LR) en la pila y los recupera al finalizar.
+//   Esta función es reutilizable en otros programas.
+// Uso:
+//   MOV R0, #10
+//   BL delay
+// ------------------------------------------------------------
 delay:
-  PUSH  {R1, R2, LR}       // Guarda los registros que va a usar y el enlace de retorno
-  MOV    R1, R0            // Copia el parametro recibido en R1
-  LDR    R2, =10000        // Constante proporcional 
+    PUSH {R1, R2, LR}	// Guarda los registros que serán usados y el link register (LR).
+    MOV R1, R0		// Copia el valor de entrada a R1 (contador externo)
 
-loop:
-  SUB    R2, R2, #1        // Decrementa el contador interno
-  CMP    R2, #0            // Compara con 0 
-  BNE    loop              // Si no es cero, sigue esperando
+outer_loop:
+    CMP R1, #0		// Compara R1 con 0.
+    BEQ end_delay		// Si R1 == 0, salta al final.
+                        // Si R1 > 0 → continua al bucle interno.
+    
+// Bucle interno para hacer que el delay sea más largo.
 
-  SUB    R1, R1, #1        // Decrementa la cantidad de repeticiones del ciclo externo
-  CMP    R1, #0            // Compara con 0
-  BNE    loop              // Si no es cero, sigue repitiendo
+    MOV R2, #3000		// Valor ajustable según la velocidad del microcontrolador.
 
-  POP  {R1, R2, LR}        // Restaura los registros antes de salir
-  BX    LR                 // Retorno de la funcion
+inner_loop:
+    SUB R2, R2, #1	// R2 = R2 - 1 y actualiza las flags.
+    BNE inner_loop	// Si R2 != 0, sigue en el bucle.
+    				// Si R2 == 0 → continua.
+    SUB R1, R1, #1	// R1 = R1 - 1
+    B outer_loop		// Vuelve al bucle externo.
+
+end_delay:
+    POP {R1, R2, LR}	// Restaura registros.
+    BX LR			// Retorna a la función que llamó.
