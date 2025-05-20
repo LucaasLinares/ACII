@@ -1,1 +1,96 @@
+// Guarda los registros que serán usados y el link register (LR).
+
+printf:
+    PUSH {R1-R12, LR}        // Registros a usar
+    MOV R12, #0              // Contador de argumentos (número de enteros ya usados)
+
+// Obtener caracter.
+// Si es el último caracter → terminar impresión
+// (no es el último caracter).
+// Si no es ‘%’ → imprime caracter del registro del JTAG UART → obtener caracter. 
+// Si es ‘%’ → si el siguiente no es ‘d’ → imprime caracter del registro del JTAG UART → obtener caracter.
+
+next_char:
+    LDRB R2, [R0], #1        // Cargar siguiente byte (char) y avanzar el puntero
+    CMP R2, #0               // ¿Fin de cadena ('\0')?
+    BEQ end_printf           // Si es fin, termina
+
+    CMP R2, #'%'             // ¿Es '%'?
+    BNE normal_char          // Si no, imprimir normalmente
+
+    // Detectar formato (por el momento solo enteros %d)
+    LDRB R3, [R0], #1        // Cargar siguiente carácter
+    CMP R3, #'d'
+    BNE normal_char          // Si no es 'd', imprimir '%' y R3 como normales
+
+// (es ‘%’ y su siguiente es ‘d’).
+// Carga el registro con el número según su aparición, es decir, si es el primer ‘%d’ se carga el primer número, si es el quinto ‘%d’, se carga el quinto número.
+
+    CMP R12, #0
+    MOVEQ R4, R1
+    CMP R12, #1
+    MOVEQ R4, R2
+    CMP R12, #2
+    MOVEQ R4, R3
+    CMP R12, #3
+    MOVEQ R4, R4
+    CMP R12, #4
+    MOVEQ R4, R5
+    ADD R12, R12, #1         // Incrementar el contador de argumentos usados
+    BL print_integer
+    B next_char
+
+// Imprimir número enviado al JTAG UART → obtener caracter.
+normal_char:
+    // Esperar que el UART esté listo para transmitir
+wait_uart:
+    LDR R5, =JTAG_UART_STATUS
+    LDR R6, [R5]
+    TST R6, #0xFFFF0000      // Verificar espacio disponible para escribir
+    BEQ wait_uart     	// Si no hay, esperar
+
+    // Escribir carácter
+    LDR R5, =JTAG_UART_DATA
+    STR R2, [R5]
+
+    B next_char
+
+end_printf:
+    POP {R1-R12, LR}
+    BX LR
+
+// Me compliqué mucho… asique asumí “numeros enteros positivos de 3 digitos”
+print_integer:
+    PUSH {R7-R9, LR}
+
+    // R4 contiene el número a imprimir (0–999)
+    MOV R7, R4
+
+    // Centenas
+    MOV R8, #100             // R8 = temporal para realizar calculos
+    UDIV R9, R7, R8         // R9 = centenas
+    ADD R9, R9, #'0'        // Convierte a ASCII
+    MOV R2, R9              // Usa R2 como en normal_char
+    BL normal_char          // Imprimir
+
+    // R7 = R4 % 100
+    MUL R9, R9, #100
+    SUB R7, R4, R9
+
+    // Decenas
+    MOV R8, #10                // R8 = temporal para realizar calculos
+    UDIV R9, R7, R8         // R9 = decenas
+    ADD R9, R9, #'0'
+    MOV R2, R9
+    BL normal_char
+
+    // Unidades
+    MUL R9, R9, #10
+    SUB R7, R7, R9          // R7 = unidades
+    ADD R7, R7, #'0'
+    MOV R2, R7
+    BL normal_char
+
+    POP {R7-R9, LR}
+    BX LR
 
