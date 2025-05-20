@@ -1,0 +1,133 @@
+.global _start
+_start:
+	BL inicio_estacionamiento
+
+// ===============================
+// INICIO DEL ESTACIONAMIENTO
+// ===============================
+inicio_estacionamiento:
+	MOV R4, #0          	// Inicializar contador de autos en 0
+
+bucle_principal:
+	BL leer_estado
+	CMP R1, #2          	// Estado "10"
+	BEQ estado_1
+	CMP R1, #1          	// Estado "01"
+	BEQ estado_6
+	B bucle_principal   	// Volver a esperar
+ 
+
+// ==========================
+// FUNCIONES DE ESTADO
+// ==========================
+
+estado_1:
+	BL leer_estado
+	CMP R1, #3          	// Estado "11"
+	BEQ estado_2
+	CMP R1, #2          	// Estado "10"
+	BEQ estado_1
+	B bucle_principal
+
+estado_2:
+	BL leer_estado
+	CMP R1, #1          	// Estado "01"
+	BEQ estado_3
+	CMP R1, #3          	// Estado "11"
+	BEQ estado_2
+	B bucle_principal
+
+estado_3:
+	BL leer_estado
+	CMP R1, #1          	// Estado "01"
+	BEQ estado_3
+	CMP R1, #0          	// Estado "00"
+	BEQ suma_contador
+	B bucle_principal
+
+estado_6:
+	BL leer_estado
+	CMP R1, #3          	// Estado "11"
+	BEQ estado_5
+	CMP R1, #1          	// Estado "01"
+	BEQ estado_6
+	B bucle_principal
+
+estado_5:
+	BL leer_estado
+	CMP R1, #2          	// Estado "10"
+	BEQ estado_4
+	CMP R1, #3          	// Estado "11"
+	BEQ estado_5
+	B bucle_principal
+
+estado_4:
+	BL leer_estado
+	CMP R1, #2          	// Estado "10"
+	BEQ estado_4
+	CMP R1, #0          	// Estado "00"
+	BEQ resta_contador
+	B bucle_principal
+
+
+// ==========================
+// LECTURA DE ESTADO
+// ==========================
+leer_estado:
+	LDR R6, =0xFF200040	// Dirección de los switches (sensores)
+	LDR R5, [R6]       	// Leer todos los switches
+
+	// Extraer sensor superior (bit 0)
+	AND R2, R5, #0x1   	// R2 = sensor superior (bit 0)
+
+	// Extraer sensor inferior (bit 1)
+	AND R3, R5, #0x2   	// R3 = sensor inferior (bit 1)
+	LSR R3, R3, #1     	// R3 = 0 o 1
+
+	// Combinar en estado de 2 bits:[sensor_superior][sensor_inferior]
+	LSL R2, R2, #1     	// R2 << 1
+	ORR R1, R2, R3     	// R1 = estado (00, 01, 10, 11)
+
+	BX LR              	// Volver
+
+
+// ==========================
+// SUMA Y RESTA CONTADOR
+// ==========================
+
+suma_contador:
+	CMP R4, #32         	// Máximo 32 autos
+	BGE bucle_principal
+	ADD R4, R4, #1
+
+	// Mostrar en LEDs
+	LDR R5, =0xff200000
+	STR R4, [R5]
+
+	// Mensaje UART
+	LDR R0, =mensaje_ingreso
+	BL printf
+	B bucle_principal
+
+resta_contador:
+	CMP R4, #0          	// Mínimo 0 autos
+	BLE bucle_principal
+	SUB R4, R4, #1
+
+	// Mostrar en LEDs
+	LDR R5, =0xff200000
+	STR R4, [R5]
+
+	// Mensaje UART
+	LDR R0, =mensaje_egreso
+	BL printf
+	B bucle_principal
+
+
+// ==========================
+// STRINGS PARA UART
+// ==========================
+mensaje_ingreso:
+	.asciz "Vehiculo ingresado. Total autos: %d. Espacios libres: %d\n"
+mensaje_egreso:
+	.asciz "Vehiculo egresado. Total autos: %d. Espacios libres: %d\n"
