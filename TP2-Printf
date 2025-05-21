@@ -46,7 +46,7 @@ normal_char:
 wait_uart:
     LDR R5, =0xA0000004
     LDR R6, [R5]
-    TST R6, #0xFFFF0000      // Verificar espacio disponible para escribir
+    TST R6, #0xF0000000      // Verificar espacio disponible para escribir
     BEQ wait_uart     	// Si no hay, esperar
 
     // Escribir carácter
@@ -64,33 +64,39 @@ print_integer:
     PUSH {R7-R9, LR}
 
     // R4 contiene el número a imprimir (0–999)
-    MOV R7, R4
 
-    // Centenas
-    MOV R8, #100             // R8 = temporal para realizar calculos
-    UDIV R9, R7, R8         // R9 = centenas
-    ADD R9, R9, #'0'        // Convierte a ASCII
-    MOV R2, R9              // Usa R2 como en normal_char
-    BL normal_char          // Imprimir
-
-    // R7 = R4 % 100
-    MUL R9, R9, #100
-    SUB R7, R4, R9
-
-    // Decenas
-    MOV R8, #10                // R8 = temporal para realizar calculos
-    UDIV R9, R7, R8         // R9 = decenas
-    ADD R9, R9, #'0'
-    MOV R2, R9
+    MOV R7, R4         // Copia de R4
+    MOV R8, #0         // Contador de centenas
+centenas_loop:
+    CMP R7, #99
+    BGT do_centena
+    B end_centenas
+do_centena:
+    SUB R7, R7, #100
+    ADD R8, R8, #1
+    B centenas_loop
+end_centenas:
+    ADD R2, R8, #'0'
     BL normal_char
 
-    // Unidades
-    MUL R9, R9, #10
-    SUB R7, R7, R9          // R7 = unidades
-    ADD R7, R7, #'0'
-    MOV R2, R7
+    MOV R8, #0         // Contador de decenas
+decenas_loop:
+    CMP R7, #9
+    BGT do_decena
+    B end_decenas
+do_decena:
+    SUB R7, R7, #10
+    ADD R8, R8, #1
+    B decenas_loop
+end_decenas:
+    ADD R2, R8, #'0'
+    BL normal_char
+
+    // R7 ahora tiene las unidades
+    ADD R2, R7, #'0'
     BL normal_char
 
     POP {R7-R9, LR}
     BX LR
+
 
