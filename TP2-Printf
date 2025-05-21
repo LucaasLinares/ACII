@@ -44,13 +44,13 @@ next_char:
 normal_char:
     // Esperar que el UART esté listo para transmitir
 wait_uart:
-    LDR R5, =JTAG_UART_STATUS
+    LDR R5, =0xA0000004
     LDR R6, [R5]
     TST R6, #0xFFFF0000      // Verificar espacio disponible para escribir
     BEQ wait_uart     	// Si no hay, esperar
 
     // Escribir carácter
-    LDR R5, =JTAG_UART_DATA
+    LDR R5, =0xA0000004
     STR R2, [R5]
 
     B next_char
