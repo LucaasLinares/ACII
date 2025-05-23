@@ -1,72 +1,54 @@
-// Guarda los registros que serán usados y el link register (LR).
+// Función para imprimir texto con formato.
+// Entrada:
+//   R0 – Dirección de una cadena ASCII terminada en NULL con formato.
+//   R1 – Dirección de un arreglo de enteros (palabras) a imprimir.
+// Salida:
+//   Ninguna (imprime directamente al JTAG UART).
+// Descripción:
+//   Recorre la cadena de formato e imprime cada carácter al UART.
+//   Soporta únicamente el especificador de formato '%d' para imprimir
+//   enteros positivos de hasta tres cifras (0–999). Si encuentra '%'
+//   seguido de cualquier otro carácter, imprime ambos tal cual.
+//   Utiliza las funciones auxiliares `print_char` y `print_integer`.
+//   Preserva los registros R1–R12 y LR.
+// Ejemplo de Uso:
+//   _start:
+//      LDR SP, =0x10008000
+//      LDR R0, =mensaje
+//      LDR R1, =argumentos
+//      BL printf
+//
+//   .data
+//   mensaje:
+//     .asciz "Valor 1: %d, Valor 2: %d\n"
+//   .align 2
+//   argumentos:
+//     .word 123
+//     .word 456
+// ------------------------------------------------------------
 
-printf:
-    PUSH {R1-R12, LR}        // Registros a usar
-    MOV R12, #0              // Contador de argumentos (número de enteros ya usados)
-
-// Obtener caracter.
-// Si es el último caracter → terminar impresión
-// (no es el último caracter).
-// Si no es ‘%’ → imprime caracter del registro del JTAG UART → obtener caracter. 
-// Si es ‘%’ → si el siguiente no es ‘d’ → imprime caracter del registro del JTAG UART → obtener caracter.
-
-next_char:
-    LDRB R2, [R0], #1        // Cargar siguiente byte (char) y avanzar el puntero
-    CMP R2, #0               // ¿Fin de cadena ('\0')?
-    BEQ end_printf           // Si es fin, termina
-
-    CMP R2, #'%'             // ¿Es '%'?
-    BNE normal_char          // Si no, imprimir normalmente
-
-    // Detectar formato (por el momento solo enteros %d)
-    LDRB R3, [R0], #1        // Cargar siguiente carácter
-    CMP R3, #'d'
-    BNE normal_char          // Si no es 'd', imprimir '%' y R3 como normales
-
-// (es ‘%’ y su siguiente es ‘d’).
-// Carga el registro con el número según su aparición, es decir, si es el primer ‘%d’ se carga el primer número, si es el quinto ‘%d’, se carga el quinto número.
-
-    CMP R12, #0
-    MOVEQ R4, R1
-    CMP R12, #1
-    MOVEQ R4, R2
-    CMP R12, #2
-    MOVEQ R4, R3
-    CMP R12, #3
-    MOVEQ R4, R4
-    CMP R12, #4
-    MOVEQ R4, R5
-    ADD R12, R12, #1         // Incrementar el contador de argumentos usados
-    BL print_integer
-    B next_char
-
-// Imprimir número enviado al JTAG UART → obtener caracter.
-normal_char:
-    // Esperar que el UART esté listo para transmitir
+// Subrutina para imprimir un carácter
+print_char:
+    PUSH {R5, R6, LR}
 wait_uart:
-    LDR R5, =0xA0000004
+    LDR R5, =0xff201000
     LDR R6, [R5]
-    TST R6, #0xF0000000      // Verificar espacio disponible para escribir
-    BEQ wait_uart     	// Si no hay, esperar
+    AND R6, #0xF0000000
+    BEQ wait_uart
 
-    // Escribir carácter
-    LDR R5, =0xA0000004
+    LDR R5, =0xff201000
     STR R2, [R5]
 
-    B next_char
-
-end_printf:
-    POP {R1-R12, LR}
+    POP {R5, R6, LR}
     BX LR
 
-// Me compliqué mucho… asique asumí “numeros enteros positivos de 3 digitos”
+// ----------------------------------------
+// Subrutina para imprimir un número entero de 3 cifras
 print_integer:
     PUSH {R7-R9, LR}
 
-    // R4 contiene el número a imprimir (0–999)
-
     MOV R7, R4         // Copia de R4
-    MOV R8, #0         // Contador de centenas
+    MOV R8, #0         // Centenas
 centenas_loop:
     CMP R7, #99
     BGT do_centena
@@ -77,9 +59,9 @@ do_centena:
     B centenas_loop
 end_centenas:
     ADD R2, R8, #'0'
-    BL normal_char
+    BL print_char
 
-    MOV R8, #0         // Contador de decenas
+    MOV R8, #0         // Decenas
 decenas_loop:
     CMP R7, #9
     BGT do_decena
@@ -90,13 +72,49 @@ do_decena:
     B decenas_loop
 end_decenas:
     ADD R2, R8, #'0'
-    BL normal_char
+    BL print_char
 
-    // R7 ahora tiene las unidades
+    // Unidades
     ADD R2, R7, #'0'
-    BL normal_char
+    BL print_char
 
     POP {R7-R9, LR}
     BX LR
 
+// ----------------------------------------
+// Función printf personalizada (solo %d)
+printf:
+    PUSH {R1-R12, LR}
+    MOV R12, #0
 
+next_char:
+    LDRB R2, [R0], #1
+    CMP R2, #0
+    BEQ end_printf
+
+    CMP R2, #'%'
+    BNE print_direct
+
+    LDRB R3, [R0], #1
+    CMP R3, #'d'
+    BNE print_percent_and_char
+
+    LDR R4, [R1, R12, LSL #2]
+    ADD R12, R12, #1
+    BL print_integer
+    B next_char
+
+print_percent_and_char:
+    MOV R2, #'%'
+    BL print_char
+    MOV R2, R3
+    BL print_char
+    B next_char
+
+print_direct:
+    BL print_char
+    B next_char
+
+end_printf:
+    POP {R1-R12, LR}
+    BX LR
