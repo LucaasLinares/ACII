@@ -1,3 +1,27 @@
+// Sistema de control de estacionamiento automatizado.
+// Entradas:
+//   Sensores de entrada/salida conectados a switches en la dirección 0xFF200040.
+// Salidas:
+//   - Cantidad de autos mostrada en LEDs en 0xFF200000.
+//   - Mensajes UART a través de 0xFF201000.
+// Descripción:
+//   Este sistema monitorea el ingreso y egreso de vehículos a través de sensores,
+//   detectando secuencias de activación que representan un movimiento válido. 
+//   Al detectar una entrada o salida, ajusta un contador interno (R4) que indica
+//   la cantidad de autos presentes en el estacionamiento (máx. 32). Los cambios
+//   se reflejan en los LEDs y se informan por UART mediante una función printf 
+//   personalizada que permite imprimir enteros con el formato "%d".
+// Uso:
+//   Al iniciar el programa, se ejecuta la función `inicio_estacionamiento`.
+//	 Para simular la entrada y salida de vehículos se debe activar y desactivar 
+//   manualmente los switches (posiciones 0 y 1) en la dirección 0xFF200040
+//   Se recomienda configurar el UART y visualizar la salida por terminal.
+//
+//   Ejemplo de mensajes UART esperados:
+//     Vehiculo ingresado. Total autos: 001. Espacios libres: 031
+//     Vehiculo egresado. Total autos: 000. Espacios libres: 032
+// ------------------------------------------------------------
+
 .global _start
 _start:
 	BL inicio_estacionamiento
@@ -74,21 +98,24 @@ estado_4:
 // LECTURA DE ESTADO
 // ==========================
 leer_estado:
-	LDR R6, =0xFF200040	// Dirección de los switches (sensores)
-	LDR R5, [R6]       	// Leer todos los switches
+    PUSH {R5, R6, R2, R3, LR}
 
-	// Extraer sensor superior (bit 0)
-	AND R2, R5, #0x1   	// R2 = sensor superior (bit 0)
+    LDR R6, =0xFF200040
+    LDR R5, [R6]
 
-	// Extraer sensor inferior (bit 1)
-	AND R3, R5, #0x2   	// R3 = sensor inferior (bit 1)
-	LSR R3, R3, #1     	// R3 = 0 o 1
+    // Extraer sensor superior (bit 0)
+    AND R2, R5, #0x1
 
-	// Combinar en estado de 2 bits:[sensor_superior][sensor_inferior]
-	LSL R2, R2, #1     	// R2 << 1
-	ORR R1, R2, R3     	// R1 = estado (00, 01, 10, 11)
+    // Extraer sensor inferior (bit 1)
+    AND R3, R5, #0x2
+    LSR R3, R3, #1
 
-	BX LR              	// Volver
+    LSL R2, R2, #1
+    ORR R1, R2, R3
+
+    POP {R5, R6, R2, R3, LR}
+    BX LR
+
 
 
 // ==========================
@@ -96,38 +123,62 @@ leer_estado:
 // ==========================
 
 suma_contador:
-	CMP R4, #32         	// Máximo 32 autos
-	BGE bucle_principal
-	ADD R4, R4, #1
+    CMP R4, #32
+    BGE bucle_principal
+    ADD R4, R4, #1
 
-	// Mostrar en LEDs
-	LDR R5, =0xff200000
-	STR R4, [R5]
+    // Mostrar en LEDs
+    LDR R5, =0xff200000
+    STR R4, [R5]
 
-	// Mensaje UART
-	LDR R0, =mensaje_ingreso
-	BL printf
-	B bucle_principal
+    // Calcular espacios libres: 32 - R4 → R6
+    MOV R5, #32
+    SUB R6, R5, R4
+
+    // Preparar argumentos para printf
+    LDR R0, =mensaje_ingreso
+    LDR R1, =args_ingreso
+    STR R4, [R1]         // Total autos
+    STR R6, [R1, #4]     // Espacios libres
+
+    BL printf
+    B bucle_principal
 
 resta_contador:
-	CMP R4, #0          	// Mínimo 0 autos
-	BLE bucle_principal
-	SUB R4, R4, #1
+    CMP R4, #0
+    BLE bucle_principal
+    SUB R4, R4, #1
 
-	// Mostrar en LEDs
-	LDR R5, =0xff200000
-	STR R4, [R5]
+    // Mostrar en LEDs
+    LDR R5, =0xff200000
+    STR R4, [R5]
 
-	// Mensaje UART
-	LDR R0, =mensaje_egreso
-	BL printf
-	B bucle_principal
+    // Calcular espacios libres: 32 - R4 → R6
+    MOV R5, #32
+    SUB R6, R5, R4
+
+    // Preparar argumentos para printf
+    LDR R0, =mensaje_egreso
+    LDR R1, =args_egreso
+    STR R4, [R1]         // Total autos
+    STR R6, [R1, #4]     // Espacios libres
+
+    BL printf
+    B bucle_principal
 
 
 // ==========================
 // STRINGS PARA UART
 // ==========================
+.data
 mensaje_ingreso:
 	.asciz "Vehiculo ingresado. Total autos: %d. Espacios libres: %d\n"
 mensaje_egreso:
 	.asciz "Vehiculo egresado. Total autos: %d. Espacios libres: %d\n"
+	
+    .align 2
+args_ingreso:
+    .space 8         // 2 palabras = 8 bytes
+
+args_egreso:
+    .space 8
