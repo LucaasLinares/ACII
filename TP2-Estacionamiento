@@ -27,6 +27,106 @@ _start:
 	BL inicio_estacionamiento
 
 // ===============================
+// PROGRAMA PRINTF AUXILIAR
+// ===============================
+
+// Subrutina para imprimir un carácter
+print_char:
+    PUSH {R5, R6, LR}
+wait_uart:
+    LDR R5, =0xff201000
+    LDR R6, [R5]
+    AND R6, #0xF0000000
+    BEQ wait_uart
+
+    LDR R5, =0xff201000
+    STR R2, [R5]
+
+    POP {R5, R6, LR}
+    BX LR
+
+// ----------------------------------------
+// Subrutina para imprimir un número entero de 3 cifras
+print_integer:
+    PUSH {R7-R9, LR}
+
+    MOV R7, R4         // Copia de R4
+    MOV R8, #0         // Centenas
+centenas_loop:
+    CMP R7, #99
+    BGT do_centena
+    B end_centenas
+do_centena:
+    SUB R7, R7, #100
+    ADD R8, R8, #1
+    B centenas_loop
+end_centenas:
+    ADD R2, R8, #'0'
+    BL print_char
+
+    MOV R8, #0         // Decenas
+decenas_loop:
+    CMP R7, #9
+    BGT do_decena
+    B end_decenas
+do_decena:
+    SUB R7, R7, #10
+    ADD R8, R8, #1
+    B decenas_loop
+end_decenas:
+    ADD R2, R8, #'0'
+    BL print_char
+
+    // Unidades
+    ADD R2, R7, #'0'
+    BL print_char
+
+    POP {R7-R9, LR}
+    BX LR
+
+// ----------------------------------------
+// Función printf personalizada (solo %d)
+printf:
+    PUSH {R1-R12, LR}
+    MOV R12, #0
+
+next_char:
+    LDRB R2, [R0], #1
+    CMP R2, #0
+    BEQ end_printf
+
+    CMP R2, #'%'
+    BNE print_direct
+
+    LDRB R3, [R0], #1
+    CMP R3, #'d'
+    BNE print_percent_and_char
+
+    LDR R4, [R1, R12, LSL #2]
+    ADD R12, R12, #1
+    BL print_integer
+    B next_char
+
+print_percent_and_char:
+    MOV R2, #'%'
+    BL print_char
+    MOV R2, R3
+    BL print_char
+    B next_char
+
+print_direct:
+    BL print_char
+    B next_char
+
+end_printf:
+    POP {R1-R12, LR}
+    BX LR
+
+// ===============================
+// FIN PROGRAMA PRINTF
+// ===============================
+
+// ===============================
 // INICIO DEL ESTACIONAMIENTO
 // ===============================
 inicio_estacionamiento:
